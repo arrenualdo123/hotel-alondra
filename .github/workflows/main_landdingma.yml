@@ -1,6 +1,3 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
 name: Build and deploy Node.js app to Azure Web App - landdingMa
 
 on:
@@ -13,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -23,26 +20,30 @@ jobs:
         with:
           node-version: '22.x'
 
-      - name: npm install, build, and test
-        run: |
-          # 🚀 CAMBIO CLAVE 1: Usar npm ci (instalación limpia)
-          npm ci 
-          # 🚀 CAMBIO CLAVE 2: Forzar npm run build (genera la carpeta .next)
-          npm run build 
-          npm run test --if-present # Se mantiene opcional
+      - name: Install dependencies
+        run: npm ci
 
+      - name: Build Next.js app
+        run: npm run build
+
+      # Empaquetar SOLO lo necesario
+      - name: Prepare deployment package
+        run: |
+          mkdir deploy
+          cp -r .next node_modules package.json package-lock.json public deploy/
+        
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .  # El path: . asegura que subes todo, incluyendo .next y node_modules
+          path: deploy
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
@@ -57,7 +58,7 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B289D5001DE44A118BF9981A78A97E5D }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2D08558E39FD41389C5C9154B5546FF4 }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
