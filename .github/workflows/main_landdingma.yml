@@ -1,9 +1,11 @@
-name: Build and deploy Node.js app to Azure Web App - landdingMa
+# Deploy Next.js app to Azure App Service with GitHub Actions
+
+name: Build and deploy Next.js app to Azure Web App - landdingMa
 
 on:
   push:
     branches:
-      - main
+      - main   # se ejecuta cada vez que haces push a main
   workflow_dispatch:
 
 jobs:
@@ -13,30 +15,36 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      # 1. Clonar repo
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js version
+      # 2. Configurar Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22.x'
+          node-version: '22.x' # mismo runtime que tu App Service
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Next.js app
-        run: npm run build
-
-      # Empaquetar SOLO lo necesario
-      - name: Prepare deployment package
+      # 3. Instalar dependencias y generar .next
+      - name: Install dependencies and build
         run: |
-          mkdir deploy
-          cp -r .next node_modules package.json package-lock.json public deploy/
-        
-      - name: Upload artifact for deployment job
+          npm ci
+          npm run build
+
+      # 4. Subir artefacto para usar en deploy
+      - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
-          name: node-app
-          path: deploy
+          name: nextjs-app
+          path: |
+            .next
+            node_modules
+            package.json
+            package-lock.json
+            public
+            next.config.js
+            tsconfig.json
+            # agrega aquí otros archivos que necesite tu app
 
   deploy:
     runs-on: ubuntu-latest
@@ -46,11 +54,14 @@ jobs:
       contents: read
 
     steps:
-      - name: Download artifact from build job
+      # 1. Descargar artefacto del job de build
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: node-app
-        
+          name: nextjs-app
+          path: .
+
+      # 2. Login a Azure
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -58,8 +69,8 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B289D5001DE44A118BF9981A78A97E5D }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2D08558E39FD41389C5C9154B5546FF4 }}
 
+      # 3. Desplegar a App Service
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'landdingMa'
