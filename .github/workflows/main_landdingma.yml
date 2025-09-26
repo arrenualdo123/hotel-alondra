@@ -24,7 +24,7 @@ jobs:
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v2
         with:
-          app-name: landdingma # <--- ¡CAMBIA ESTO! Debe ser "landdingma"
+          app-name: landdingma 
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          # El paquete debe ser el directorio raíz que incluye .next
-          package: .
+          package: .next/standalone 
+
